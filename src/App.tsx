@@ -15,7 +15,6 @@ import {
   INITIAL_SERVICES 
 } from './data/initialData';
 import { PhoneFrame } from './components/PhoneFrame';
-import { ApkExportModal } from './components/ApkExportModal';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { OwnerHomeScreen } from './components/owner/OwnerHomeScreen';
 import { AppointmentsScreen } from './components/owner/AppointmentsScreen';
@@ -34,7 +33,7 @@ import { NewCustomerModal } from './components/common/NewCustomerModal';
 import { HeadsUpNotification } from './components/common/HeadsUpNotification';
 import { NotificationDrawer } from './components/common/NotificationDrawer';
 import { playNotificationChime } from './utils/notificationSound';
-import { Sparkles, Download, Smartphone, Check, Store, User, ArrowLeftRight, Bell } from 'lucide-react';
+import { Check, ArrowLeftRight, Bell } from 'lucide-react';
 
 const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
@@ -65,7 +64,6 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ActiveScreen>('owner_home');
   const [userRole, setUserRole] = useState<UserRole>('SALON_OWNER');
   const [isSimulatorMode, setIsSimulatorMode] = useState(true);
-  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
   // Business Data State
   const [services, setServices] = useState<BeautyService[]>(INITIAL_SERVICES);
@@ -294,7 +292,6 @@ export default function App() {
     <PhoneFrame
       isSimulatorMode={isSimulatorMode}
       onToggleSimulator={() => setIsSimulatorMode(!isSimulatorMode)}
-      onOpenApkModal={() => setIsApkModalOpen(true)}
     >
       <div className="flex-1 flex flex-col min-h-full relative text-[#31081d]">
         
@@ -339,14 +336,6 @@ export default function App() {
                     {unreadNotifCount}
                   </span>
                 )}
-              </button>
-
-              <button
-                onClick={() => setIsApkModalOpen(true)}
-                className="flex items-center gap-1 text-[11px] font-bold text-[#31081d] bg-[#f6ebed] hover:bg-[#ebe0e2] px-3 py-1 rounded-full border border-[#d4c2c7]/50 transition active:scale-95"
-              >
-                <Download className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>خروجی APK</span>
               </button>
             </div>
           </div>
@@ -521,12 +510,6 @@ export default function App() {
           isOpen={isNewCustomerOpen}
           onClose={() => setIsNewCustomerOpen(false)}
           onAddCustomer={handleAddCustomer}
-        />
-
-        {/* Comprehensive APK Export & Test Guide Modal */}
-        <ApkExportModal
-          isOpen={isApkModalOpen}
-          onClose={() => setIsApkModalOpen(false)}
         />
 
       </div>
