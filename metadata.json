@@ -1,0 +1,6 @@
+{
+  "name": "زیبانو - Zibano Salon Platform",
+  "description": "پلتفرم هوشمند مدیریت سالن‌های زیبایی و رزرو آنلاین نوبت با پشتیبانی از تقویم شمسی و محیط تست اندروید",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
