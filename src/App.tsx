@@ -59,20 +59,50 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   }
 ];
 
+/**
+ * هوک ذخیره‌سازی دائمی: هر تغییری در state، خودکار در حافظه دستگاه
+ * (localStorage) ذخیره می‌شود و با بستن اپ از بین نمی‌رود.
+ */
+function usePersistentState<T>(key: string, initialValue: T) {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = window.localStorage.getItem(key);
+      return stored !== null ? (JSON.parse(stored) as T) : initialValue;
+    } catch (e) {
+      console.warn('Zibano storage read error:', key, e);
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn('Zibano storage write error:', key, e);
+    }
+  }, [key, value]);
+
+  return [value, setValue] as const;
+}
+
 export default function App() {
-  // App state
-  const [currentScreen, setCurrentScreen] = useState<ActiveScreen>('owner_home');
-  const [userRole, setUserRole] = useState<UserRole>('SALON_OWNER');
-  const [isSimulatorMode, setIsSimulatorMode] = useState(true);
+  // Session (persisted): null = nobody logged in
+  const [session, setSession] = usePersistentState<UserRole | null>('zibano_session', null);
 
-  // Business Data State
-  const [services, setServices] = useState<BeautyService[]>(INITIAL_SERVICES);
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
-  const [customers, setCustomers] = useState<CustomerProfile[]>(INITIAL_CUSTOMERS);
-  const [salons, setSalons] = useState<Salon[]>(INITIAL_SALONS);
+  // App state — starts at login unless a saved session exists
+  const [currentScreen, setCurrentScreen] = useState<ActiveScreen>(
+    session ? (session === 'SALON_OWNER' ? 'owner_home' : 'customer_home') : 'login'
+  );
+  const [userRole, setUserRole] = useState<UserRole>(session ?? 'SALON_OWNER');
 
-  // Notification State
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  // Business Data State (persisted on device)
+  const [services, setServices] = usePersistentState<BeautyService[]>('zibano_services', INITIAL_SERVICES);
+  const [appointments, setAppointments] = usePersistentState<Appointment[]>('zibano_appointments', INITIAL_APPOINTMENTS);
+  const [customers, setCustomers] = usePersistentState<CustomerProfile[]>('zibano_customers', INITIAL_CUSTOMERS);
+  const [salons, setSalons] = usePersistentState<Salon[]>('zibano_salons', INITIAL_SALONS);
+
+  // Notification State (persisted on device)
+  const [notifications, setNotifications] = usePersistentState<AppNotification[]>('zibano_notifications', INITIAL_NOTIFICATIONS);
   const [activeHeadsUp, setActiveHeadsUp] = useState<AppNotification | null>(null);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
 
@@ -97,6 +127,7 @@ export default function App() {
   // Auth handler
   const handleLoginSuccess = (role: UserRole) => {
     setUserRole(role);
+    setSession(role);
     if (role === 'SALON_OWNER') {
       setCurrentScreen('owner_home');
       showToast('با موفقیت وارد پنل مدیریت سالن شدید');
@@ -104,6 +135,12 @@ export default function App() {
       setCurrentScreen('customer_home');
       showToast('به زیبانو خوش آمدید! سالن مورد نظر خود را انتخاب کنید');
     }
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    setSession(null);
+    setCurrentScreen('login');
   };
 
   // Appointments actions with Notification & Sound
@@ -276,10 +313,12 @@ export default function App() {
   const toggleUserRole = () => {
     if (userRole === 'SALON_OWNER') {
       setUserRole('CUSTOMER');
+      setSession('CUSTOMER');
       setCurrentScreen('customer_home');
       showToast('سوییچ به حالت مشتری (رزرو نوبت)');
     } else {
       setUserRole('SALON_OWNER');
+      setSession('SALON_OWNER');
       setCurrentScreen('owner_home');
       showToast('سوییچ به حالت سالن‌دار (مدیریت سالن)');
     }
@@ -289,10 +328,7 @@ export default function App() {
   const unreadNotifCount = notifications.filter(n => !n.read).length;
 
   return (
-    <PhoneFrame
-      isSimulatorMode={isSimulatorMode}
-      onToggleSimulator={() => setIsSimulatorMode(!isSimulatorMode)}
-    >
+    <PhoneFrame>
       <div className="flex-1 flex flex-col min-h-full relative text-[#31081d]">
         
         {/* Heads-up Push Notification Floating on Top */}
@@ -413,13 +449,13 @@ export default function App() {
           {currentScreen === 'owner_profile' && (
             userRole === 'CUSTOMER' ? (
               <CustomerProfileView
-                onLogout={() => setCurrentScreen('login')}
+                onLogout={handleLogout}
                 onShowToast={showToast}
               />
             ) : (
               <OwnerProfileScreen
                 salonName="سالن زیبایی مریم"
-                onLogout={() => setCurrentScreen('login')}
+                onLogout={handleLogout}
                 onShowToast={showToast}
               />
             )
